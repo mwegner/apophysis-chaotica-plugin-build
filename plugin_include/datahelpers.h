@@ -1,8 +1,6 @@
 // separated from apoplugin.h so it can be included first
 // just a couple of math constants and a wrapper for better randomization
 
-#include "sfmt.cpp"
-
 typedef struct
 {
     double x;
@@ -36,11 +34,3 @@ typedef struct
 #define M_2_SQRTPI 1.12837916709551257390
 #define M_SQRT2    1.41421356237309504880
 #define M_SQRT1_2  0.707106781186547524401
-
-#define GOODRAND_0X(x) VAR(goodRandom).IRandom(0, x)
-#define GOODRAND_01() VAR(goodRandom).Random()
-#define GOODRAND_SEED(x) vp->var.goodRandom.RandomInit(x)
-#define GOODRAND_INT() vp->var.goodRandom.IRandom(0, 4294967296)
-#define GOODRAND_PREPARE() VAR(goodRandom) = CRandomSFMT(rand(), true)
-#define GOODRAND_STRUCT CRandomSFMT goodRandom
-#define GOODRAND_PI() GOODRAND_01() * M_PI_2

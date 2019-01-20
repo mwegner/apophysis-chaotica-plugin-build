@@ -8,6 +8,8 @@
 #include <limits.h>
 #include <float.h>
 
+#include "sfmt.cpp"
+
 #ifndef TRUE
 #define TRUE (1)
 #define FALSE (0)
@@ -99,7 +101,7 @@ double dummyFTz, dummyFPz, dummyColor;
 
 typedef struct
 {
-	double vvar;
+    double vvar;
 	double* pFTx;
 	double* pFTy;
 	double* pFTz;
@@ -109,6 +111,7 @@ typedef struct
 	double* pColor;
 	double a, b, c, d, e, f;
 	Variables var;
+    CRandomSFMT goodRandom;
 } Variation;
 
 #define APO_EXPORT __declspec (dllexport)
@@ -140,27 +143,15 @@ APO_EXPORT int			PluginVarGetArchitecture(void);
 #define APO_PLUGIN(x) const char* PluginVarGetName(void) { return (x); }
 #define APO_NUM_VARIABLES(x) int PluginVarGetNrVariables(void) { return (x); }
 
-/*
-NOTE:  This macro was causing issues with Visual Studio, since when it's used with no arguments, there's a zero-length array being initialized (other compilers are okay with this).
-I went down an awful, awful rabbit hole of macro-based solutions, but in the end just padded the data with an extra first struct, and updated functions:
+#define APO_VARIABLE_DUMMY {"_UNUSED_", REAL, 0, 0, 0, 0 }
 
-PluginVarGetVariableNameAt
-- now accesses index+1
+#ifdef PLUGIN_WARNING
+#define APO_VARIABLES_INTERNAL(...) VariableInfo VarInfo[] = { __VA_ARGS__ {PLUGIN_WARNING, REAL, 0, 0, 0, 0 } }; APO_NUM_VARIABLES((sizeof(VarInfo) / sizeof(VariableInfo)) - 1)
+#else
+#define APO_VARIABLES_INTERNAL(...) VariableInfo VarInfo[] = { __VA_ARGS__ }; APO_NUM_VARIABLES((sizeof(VarInfo) / sizeof(VariableInfo)) - 1)
+#endif
 
-PluginVarResetVariable
-PluginVarGetVariable
-PluginVarSetVariable
-- shifts loop to i = 1, i < NumVars + 1
-
-This is sort of a gross solution, but it hides the complication from the plugin author, and allows more sources to be used verbatim
-Tested in Chaotica and Apophysis 7X
-
-Worst case, if a plugin host directly accesses VarInfo, you just get an "UNUSED" variable showing up
-(I think...)
-
-*/
-
-#define APO_VARIABLES(...) VariableInfo VarInfo[] = { {"_UNUSED_", REAL, 0, 0, 0, 0 },  __VA_ARGS__ }; APO_NUM_VARIABLES((sizeof(VarInfo) / sizeof(VariableInfo) - 1))
+#define APO_VARIABLES(...) APO_VARIABLES_INTERNAL(APO_VARIABLE_DUMMY, __VA_ARGS__)
 
 #define VAR_DEF(nm, min, max, def, type) { APO_VARIABLE_PREFIX#nm, type, OFFSET(nm), min, max, def }
 #define VAR_REAL(nm, def) VAR_DEF(nm, -DBL_MAX, DBL_MAX, def, REAL)
@@ -182,6 +173,16 @@ Worst case, if a plugin host directly accesses VarInfo, you just get an "UNUSED"
 
 #define TC  (*(vp->pColor))
 #define TM(name) (vp->name)
+
+#define GOODRAND_0X(x) vp->goodRandom.IRandom(0, x)
+#define GOODRAND_01() vp->goodRandom.Random()
+#define GOODRAND_SEED(x) vp->goodRandom.RandomInit(x)
+#define GOODRAND_INT() vp->goodRandom.IRandom(0, 4294967296)
+#define GOODRAND_PREPARE()
+#define GOODRAND_PI() GOODRAND_01() * M_PI_2
+
+#define random01() GOODRAND_01()
+#define random0x(x) GOODRAND_0X(x)
 
 APO_EXPORT void* PluginVarCreate(void)
 {
@@ -252,6 +253,8 @@ APO_EXPORT int PluginVarInit(void* varptr, void* pFPx, void* pFPy, void* pFTx, v
 
 	vp->vvar = vvar;
 
+    vp->goodRandom = CRandomSFMT(rand(), true);
+
 	return TRUE;
 }
 APO_EXPORT int PluginVarInit3D(void* varptr, void* pFPx, void* pFPy, void* pFPz, void* pFTx, void* pFTy, void* pFTz, double vvar)
@@ -293,7 +296,12 @@ APO_EXPORT int PluginVarResetVariable(void* VariationPtr, const char* name)
 	if ((var = (Variation*) VariationPtr) == 0)
 		return FALSE;
 
-	for (int i = 1 ; i < numVars + 1; i++)
+#ifdef PLUGIN_WARNING
+	if(strcmp(PLUGIN_WARNING, name) == 0)
+	    return TRUE;
+#endif
+
+	for (int i = 1 ; i < numVars ; i++)
 	{
 		if (strcmp(VarInfo[i].name, name) == 0)
 		{
@@ -323,7 +331,12 @@ APO_EXPORT int PluginVarGetVariable(void* VariationPtr, const char* name, double
 	if ((var = (Variation*) VariationPtr) == 0)
 		return FALSE;
 
-	for (int i = 1 ; i < numVars + 1; i++)
+#ifdef PLUGIN_WARNING
+    if(strcmp(PLUGIN_WARNING, name) == 0)
+	    return TRUE;
+#endif
+
+	for (int i = 1 ; i < numVars; i++)
 	{
 		if (strcmp(VarInfo[i].name, name) == 0)
 		{
@@ -342,7 +355,12 @@ APO_EXPORT int PluginVarSetVariable(void* VariationPtr, const char* name, double
 	if ((var = (Variation*) VariationPtr) == 0)
 		return FALSE;
 
-	for (int i = 1 ; i < numVars + 1; i++)
+#ifdef PLUGIN_WARNING
+    if(strcmp(PLUGIN_WARNING, name) == 0)
+	    return TRUE;
+#endif
+
+	for (int i = 1 ; i < numVars; i++)
 	{
 		if (strcmp(VarInfo[i].name, name) == 0)
 		{
@@ -410,18 +428,9 @@ inline void sinhcosh(double theta, double* sh, double* ch)
 	*sh = (expt - exptinv) * 0.5;
 	*ch = (expt + exptinv) * 0.5;
 }
-inline double random01()
-{
-	return ((rand() ^ (rand()<<15)) & 0xfffffff) / (double) 0xfffffff;
-}
 inline double sqr(double x)
 {
 	return x*x;
-}
-
-inline int random0x(int x)
-{
-	return rand() % x;
 }
 
 inline int iabs(int x)

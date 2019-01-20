@@ -7,6 +7,9 @@ mkdir x64_logs
 @RD /S /Q x86_logs
 mkdir x86_logs
 
+del x64\*.dll
+del x86\*.dll
+
 set "VSPATH=C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\Common7\Tools"
 
 if %1.==. (
