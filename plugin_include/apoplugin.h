@@ -146,12 +146,12 @@ APO_EXPORT int			PluginVarGetArchitecture(void);
 #define APO_VARIABLE_DUMMY {"_UNUSED_", REAL, 0, 0, 0, 0 }
 
 #ifdef PLUGIN_WARNING
-#define APO_VARIABLES_INTERNAL(...) VariableInfo VarInfo[] = { __VA_ARGS__ {PLUGIN_WARNING, REAL, 0, 0, 0, 0 } }; APO_NUM_VARIABLES((sizeof(VarInfo) / sizeof(VariableInfo)) - 1)
+#define APO_VARIABLES_INTERNAL(...) VariableInfo VarInfo[] = { APO_VARIABLE_DUMMY, __VA_ARGS__ }; APO_NUM_VARIABLES((sizeof(VarInfo) / sizeof(VariableInfo)) )
 #else
-#define APO_VARIABLES_INTERNAL(...) VariableInfo VarInfo[] = { __VA_ARGS__ }; APO_NUM_VARIABLES((sizeof(VarInfo) / sizeof(VariableInfo)) - 1)
+#define APO_VARIABLES_INTERNAL(...) VariableInfo VarInfo[] = { APO_VARIABLE_DUMMY, __VA_ARGS__ }; APO_NUM_VARIABLES((sizeof(VarInfo) / sizeof(VariableInfo)) - 1)
 #endif
 
-#define APO_VARIABLES(...) APO_VARIABLES_INTERNAL(APO_VARIABLE_DUMMY, __VA_ARGS__)
+#define APO_VARIABLES(...) APO_VARIABLES_INTERNAL(__VA_ARGS__)
 
 #define VAR_DEF(nm, min, max, def, type) { APO_VARIABLE_PREFIX#nm, type, OFFSET(nm), min, max, def }
 #define VAR_REAL(nm, def) VAR_DEF(nm, -DBL_MAX, DBL_MAX, def, REAL)
@@ -282,6 +282,11 @@ APO_EXPORT int PluginVarInitDC(void* varptr, void* pFPx, void* pFPy, void* pFPz,
 APO_EXPORT const char* PluginVarGetVariableNameAt(int index)
 {
 	int numVars = PluginVarGetNrVariables();
+
+#ifdef PLUGIN_WARNING
+	if(index == numVars-1)
+	    return PLUGIN_WARNING;
+#endif
 
 	if (index >= 0 && index < numVars)
 		return VarInfo[index+1].name;

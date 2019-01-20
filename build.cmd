@@ -1,11 +1,8 @@
 @ECHO OFF
 setlocal enabledelayedexpansion
 
-@RD /S /Q x64_logs
-mkdir x64_logs
-
-@RD /S /Q x86_logs
-mkdir x86_logs
+del x64_logs\*.txt
+del x86_logs\*.txt
 
 del x64\*.dll
 del x86\*.dll
