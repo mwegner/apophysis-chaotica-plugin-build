@@ -22,12 +22,13 @@ mkdir temp
 cd temp
 
 CL.exe /std:c++17 /c /Zi /W3 /WX- /Ox /O2 /Oi /GL /D NO_ASM /D X64 /D _WINDLL /D _MBCS /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Gd /TP /errorReport:queue /FS ../plugin_include/c8lib.cpp
+CL.exe /std:c++17 /c /Zi /W3 /WX- /Ox /O2 /Oi /GL /D NO_ASM /D X64 /D _WINDLL /D _MBCS /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Gd /TP /errorReport:queue /FS ../plugin_include/pcg_basic.c
 
 for /R ..\plugin_source %%f in (%SEARCH%.c*) do (
   echo Building X64: %%f
 
   CL.exe /std:c++17 /I ..\plugin_include /c /Zi /W3 /WX- /Ox /O2 /Oi /GL /D NO_ASM /D X64 /D _WINDLL /D _MBCS /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Gd /TP /errorReport:queue /FS %%f | ..\tools\wtee.exe ..\x64_logs\%%~nf.log.txt
-  link.exe /ERRORREPORT:QUEUE /OUT:"%%~nf.dll" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /DEF:"../plugin_include/plugin.def" /MANIFEST:NO /DEBUG /PDB:"%%~nf.pdb" /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"%%~nf.lib" /MACHINE:X64 /DLL c8lib.obj %%~nf.obj
+  link.exe /ERRORREPORT:QUEUE /OUT:"%%~nf.dll" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /DEF:"../plugin_include/plugin.def" /MANIFEST:NO /DEBUG /PDB:"%%~nf.pdb" /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"%%~nf.lib" /MACHINE:X64 /DLL pcg_basic.obj c8lib.obj %%~nf.obj
   copy /Y %%~nf.dll ..\x64\%%~nf.x64.dll
 
   echo.
@@ -50,13 +51,14 @@ mkdir temp
 cd temp
 
 CL.exe /std:c++17 /c /Zi /W3 /WX- /Ox /O2 /Oi /GL /D _WINDLL /D _MBCS /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Gd /TP /errorReport:queue /FS ../plugin_include/c8lib.cpp
+CL.exe /std:c++17 /c /Zi /W3 /WX- /Ox /O2 /Oi /GL /D _WINDLL /D _MBCS /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Gd /TP /errorReport:queue /FS ../plugin_include/pcg_basic.c
 
 for /R ..\plugin_source %%f in (%SEARCH%.c*) do (   
 
   echo Building X86: %%f
 
   CL.exe /I ..\plugin_include /c /Zi /nologo /W3 /WX- /Ox /O2 /Oi /Oy- /GL /D _WINDLL /D _MBCS /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Gd /TP /analyze- /errorReport:queue %%f > ..\x86_logs\%%~nf.log.txt | type ..\x86_logs\%%~nf.log.txt
-  link.exe /ERRORREPORT:QUEUE /OUT:"%%~nf.dll" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /DEF:"../plugin_include/plugin.def" /MANIFEST:NO /DEBUG /PDB:"%%~nf.pdb" /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"%%~nf.lib" /MACHINE:X86 /SAFESEH /DLL %%~nf.obj
+  link.exe /ERRORREPORT:QUEUE /OUT:"%%~nf.dll" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /DEF:"../plugin_include/plugin.def" /MANIFEST:NO /DEBUG /PDB:"%%~nf.pdb" /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"%%~nf.lib" /MACHINE:X86 /SAFESEH /DLL pcg_basic.obj c8lib.obj %%~nf.obj
   copy /Y %%~nf.dll ..\x86\%%~nf.x86.dll
 
   echo.

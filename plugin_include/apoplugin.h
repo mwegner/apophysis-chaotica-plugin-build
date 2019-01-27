@@ -8,7 +8,13 @@
 #include <limits.h>
 #include <float.h>
 
-#include "sfmt.cpp"
+// for random init seeds
+#include <stdio.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include "pcg_basic.h"
+
 
 #ifndef TRUE
 #define TRUE (1)
@@ -111,7 +117,7 @@ typedef struct
 	double* pColor;
 	double a, b, c, d, e, f;
 	Variables var;
-    CRandomSFMT goodRandom;
+    pcg32_random_t rng;
 } Variation;
 
 #define APO_EXPORT __declspec (dllexport)
@@ -174,10 +180,10 @@ APO_EXPORT int			PluginVarGetArchitecture(void);
 #define TC  (*(vp->pColor))
 #define TM(name) (vp->name)
 
-#define GOODRAND_0X(x) vp->goodRandom.IRandom(0, x)
-#define GOODRAND_01() vp->goodRandom.Random()
-#define GOODRAND_SEED(x) vp->goodRandom.RandomInit(x)
-#define GOODRAND_INT() vp->goodRandom.IRandom(0, 4294967296)
+#define GOODRAND_0X(x) pcg32_boundedrand_r(&vp->rng, x)
+#define GOODRAND_01() ((double(pcg32_random_r(&vp->rng) >> 5) * 67108864. + double(pcg32_random_r(&vp->rng) >> 6)) * (1. / 9007199254740992.))
+#define GOODRAND_SEED(x) pcg32_srandom_r(&vp->rng, x, 0);
+#define GOODRAND_INT() pcg32_random_r(&vp->rng)
 #define GOODRAND_PREPARE()
 #define GOODRAND_PI() GOODRAND_01() * M_PI_2
 
@@ -253,7 +259,8 @@ APO_EXPORT int PluginVarInit(void* varptr, void* pFPx, void* pFPy, void* pFTx, v
 
 	vp->vvar = vvar;
 
-    vp->goodRandom = CRandomSFMT(rand(), true);
+	// initial random seed
+	pcg32_srandom_r(&vp->rng, time(NULL) ^ (intptr_t)&printf, 0);
 
 	return TRUE;
 }
